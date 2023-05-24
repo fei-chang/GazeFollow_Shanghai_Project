@@ -57,5 +57,5 @@ Project Repo for handling gaze of kid and teacher during interation in an open e
     - Entries of 'xmin', 'ymin', 'xmax', 'ymax' are all in 0-1 scale; 
     - Entries of 'personID' are one of values: 'kid'/'teacher'; 
     - Entries of 'missing' are booleans - with True indicating the head of the target person is undetected/occluded/outside-the-frame.
-3. Estimated 2D gaze point and gaze patterns: `gaze_annotations/instance_id/camera_id.csv`
+3. Estimated 2D gaze point and gaze patterns: 
     - TODO
