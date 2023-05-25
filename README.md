@@ -8,18 +8,20 @@ Project Repo for handling gaze of kid and teacher during interation in an open e
 - Gaze Follow
 - Gaze Pattern Analysis
 
-## Files Specifications
-### Project Folder Structure
+### Project File Specifications
+<details>
+<summary> File Folder Structure </summary>
 
-    ├── vids                      -> the raw videos 
-    |  ├── instance_id            # each instance_id corresponding to an interaction period of a kid
-    |  |  ├── camera_id.mov      
-    |  |  ├── ...                 
-    |  |  └── camera_1_3.mov      
+
+    ├── vids                        -> the raw videos 
+    |  ├── instance_id               # each instance_id corresponding to an interaction period of a kid
+    |  |  ├── camera_id.mov         
+    |  |  ├── ...                   
+    |  |  └── camera_1_3.mov        
     |  └── ...                    
-    ├── frames                    -> the extracted frames
+    ├── frames                      -> the extracted frames
     |  ├── instance_id            
-    |  |  ├── camera_id           # frames are named in format %06d.jpg
+    |  |  ├── camera_id              # frames are named in format %06d.jpg
     |  |  |  ├── 000001.jpg       
     |  |  |  ├── 000002.jpg       
     |  |  |  ├── ...              
@@ -27,26 +29,17 @@ Project Repo for handling gaze of kid and teacher during interation in an open e
     |  |  └── ...                 
     |  └── ...                    
     ├── annotations               
-    |  ├── raw_detection          -> head bounding box detection by yolo_v3
-    |  |  ├── instance_id         
-    |  |  |  ├── camera_id.txt    # detailed formatting please refer to file format specification**
-    |  |  |  ├── ...              
-    |  |  |  └── camera_1_3.txt   
+    |  ├── instance_id         
+    |  |  ├── camera_id    
+    |  |  |  ├── raw_detections.txt         -> head bounding box detection by yolo_v3   
+    |  |  |  ├── head_annotations.csv       -> cleaned head annotations with personID
+    |  |  |  └── gaze_points_personID.csv   -> estimated 2D gaze points and gaze patterns of a specific person
     |  |  └── ...                 
-    |  ├── head_annotations       -> cleaned head annotations with personID
-    |  |  ├── instance_id         
-    |  |  |  ├── camera_id.csv    # detailed formatting please refer to file format specification**
-    |  |  |  ├── ...              
-    |  |  |  └── camera_1_3.csv   
-    |  |  └── ...       
-    |  ├── gaze_annotations       -> estimated 2D gaze point and gaze pattern 
-    |  |  ├── instance_id         
-    |  |  |  ├── camera_id.csv    # detailed formatting please refer to file format specification**
-    |  |  |  ├── ...              
-    |  |  |  └── camera_1_3.csv   
-    |  |  └── ...       
-    
-### Annotation Formats
+</details>
+
+<details>
+<summary> File Format Specification </summary>
+
 1. The raw head bounding box detection by yolo_v3: 
     - :x: No column header, entries are added as ['frameID', 'xmin', 'ymin', 'xmax', 'ymax']
     - :x: No index column
@@ -59,3 +52,4 @@ Project Repo for handling gaze of kid and teacher during interation in an open e
     - Entries of 'missing' are booleans - with True indicating the head of the target person is undetected/occluded/outside-the-frame.
 3. Estimated 2D gaze point and gaze patterns: 
     - TODO
+</details>
