@@ -56,7 +56,7 @@ python main.py --base_dir base_dir --instance_id instance_id --camera_id camera_
     - Entries of 'personID' are one of values: 'kid'/'teacher'; 
     - Entries of 'missing' are booleans - with True indicating the head of the target person is undetected/occluded/outside-the-frame.
 3. **gaze_points_with_patterns.csv** (Estimated 2D gaze point and gaze patterns)
-    - :while_check_box: Has column header: `['frameID', 'personID', 'xmin', 'ymin', 'xmax', 'ymax', 'gaze_x', 'gaze_y', 'pattern', 'missing']`
+    - :white_check_mark: Has column header: `['frameID', 'personID', 'xmin', 'ymin', 'xmax', 'ymax', 'gaze_x', 'gaze_y', 'pattern', 'missing']`
     - :x: No index column
     - Entries of 'xmin', 'ymin', 'xmax', 'ymax', 'gaze_x', 'gaze_y' are all in 0-1 scale; 
     - Entries of 'pattern' contains values of 'Share', 'Mutual', 'Single', 'Miss', 'Void' and None for frames where only one person is present.
