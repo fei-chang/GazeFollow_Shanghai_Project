@@ -17,15 +17,6 @@ def cv2_safe_write(img, filename):
     '''
     cv2.imencode('.jpg', img)[1].tofile(filename)
 
-def standout_print(log_info:str):
-    '''
-    To emphasize printing information
-    '''
-    print()
-    print("*"*30)
-    print(log_info)
-    print('*'*30)
-
 def frame_extraction(input_vid:str, output_dir:str, fps=-1):
     '''
     Args:
@@ -43,14 +34,14 @@ def frame_extraction(input_vid:str, output_dir:str, fps=-1):
 
     subprocess.run(ffmpeg_command, check=True)
 
-def visualize(output_vid: str, frame_dir:str, source_labels:pd.DataFrame, 
+def visualize(output_vid: str, frame_dir:str, annotations:str, 
               gaze_heatmaps=True, gaze_points = True, gaze_patterns = True,
               fps = 30, rate=1, compression=1, save_img = False):
     '''
     Args:
     output_vid:     Path of the visualization video
     frame_dir:      Directory to read in frames
-    source_labels:  pd.DataFrame of labels to visualize with
+    annotations:    Path of the annotation file to visualize with
     gaze_heatmaps:  Whether or not to visualize gaze heatmaps
     gaze_points:    Whether or not to visualize the 2D gaze points
     gaze_patterns:  Whehter or not to visualize the gaze patterns
@@ -62,8 +53,9 @@ def visualize(output_vid: str, frame_dir:str, source_labels:pd.DataFrame,
     '''
     ############################################################################################
     # Input Check
+    source_labels = pd.read_csv(annotations)
     visualization_labels = source_labels[source_labels.frameID%rate==0]
-    assert (not visualization_labels.isna().values.any()) # Confirm no NaN value in the dataframe
+
     grouped_df = visualization_labels.groupby('frameID')
     valid_frames = [int(f[:-4]) for f in os.listdir(frame_dir)]
     assert len(valid_frames)>0
@@ -85,6 +77,7 @@ def visualize(output_vid: str, frame_dir:str, source_labels:pd.DataFrame,
     font = cv2.FONT_HERSHEY_SIMPLEX
     circle_thickness = 5
     line_thickness = 2
+    font_size = 1
 
     for frame_num in visualization_labels.frameID.unique():
         # read_frame
@@ -94,7 +87,8 @@ def visualize(output_vid: str, frame_dir:str, source_labels:pd.DataFrame,
         # get_annotation
         annotations = grouped_df.get_group(frame_num)
         for idx in range(len(annotations)):
-            xmin, ymin, xmax, ymax, personID = annotations.iloc[idx][['xmin', 'ymin', 'xmax', 'ymax','personID']]
+            info = annotations.iloc[idx]
+            xmin, ymin, xmax, ymax, personID = info[['xmin', 'ymin', 'xmax', 'ymax','personID']]
             xmin, ymin, xmax, ymax = map(int, [xmin*w, ymin*h, xmax*w, ymax*h])
             color = (0,255,0) if (personID=='teacher') else (0,0,255)
             frame = cv2.rectangle(frame, (xmin,ymin), (xmax, ymax), color, line_thickness) # Draw head box
@@ -102,11 +96,13 @@ def visualize(output_vid: str, frame_dir:str, source_labels:pd.DataFrame,
                 #TODO:
                 print("Gaze heatmap visualization Under Construction")
             if gaze_patterns:
-                #TODO:
-                print("Gaze pattern visualization Under Construction")
+                gaze_pattern = info['pattern']
+                if gaze_pattern:
+                    frame = cv2.putText(frame, str(gaze_pattern), (xmin+5, ymax+20), font, font_size, (0,255,0), line_thickness)
+
             if gaze_points:
                 center_x, center_y = map(int,[(xmax+xmin)/2, (ymin+ymax)/2])
-                gaze_x, gaze_y =  annotations.iloc[idx][['gaze_x', 'gaze_y']]
+                gaze_x, gaze_y =  info[['gaze_x', 'gaze_y']]
                 gaze_x, gaze_y = map(int, [gaze_x*w, gaze_y*h])
 
                 frame = cv2.circle(frame, (gaze_x, gaze_y), circle_thickness, color, -1) # Draw Gaze Point
@@ -115,8 +111,8 @@ def visualize(output_vid: str, frame_dir:str, source_labels:pd.DataFrame,
             # save to img
             cv2_safe_write(frame, '%s/%06d.jpg'%(out_path, frame_num))
 
+        frame = cv2.putText(frame, '%06d'%frame_num,(50, 100), font, font_size, (0,255,0), line_thickness)
         # output to video
-        frame = cv2.putText(frame, '%06d'%frame_num,(50, 100), font, 2, (0,255,0), 2)
         out.write(frame) 
 
     out.release()
