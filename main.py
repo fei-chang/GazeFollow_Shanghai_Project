@@ -6,7 +6,7 @@ from GazeHandler import GazeHandler
 def get_args_parser():
     parser = argparse.ArgumentParser('General Setup', add_help=False)
     # Setup Path
-    parser.add_argument('--base_dir', type=str, default = '')
+    parser.add_argument('--base_dir', type=str, default = 'D:/ShanghaiASD_project/ShanghaiASD/20230519')
     parser.add_argument('--model_weights', type=str, default = '/home/changfei/gaze_follow/model_gazefollow.pt')
     
     # Setup Instance and Camera ids
@@ -21,6 +21,8 @@ def get_args_parser():
     parser.add_argument('--visualize_all', action='store_true')
 
     parser.add_argument('--full_pipeline', action='store_true')
+    return parser
+
 def main(args):
     # Confirm Info 
     print("Running Gaze Follow and Gaze Pattern pipeline...")
@@ -29,22 +31,25 @@ def main(args):
     if args.obtain_gaze or args.full_pipeline:
         gaze_handler = GazeHandler(args.model_weights)
     
-    instances =  os.listdir(args.base_dir) if args.instance_id=='all' else [args.instance_id]
+    instances =  os.listdir('%s/vids'%args.base_dir) if args.instance_id=='all' else [args.instance_id]
+    print("Will Run selected pipelines on instances: ", instances)
     for instance_id in instances:
-        cameras = os.listdir('%s/%s'%args.base_dir, instance_id) if args.camera_id=='all' else [args.camera_id]
-        for camera_id in cameras:
+        cameras = os.listdir('%s/vids/%s'%(args.base_dir, instance_id)) if args.camera_id=='all' else [args.camera_name]
+        for camera_name in cameras:
             # Setting up directories
-            raw_vid = '%s/%s/%s.mov'%(args.base_dir, instance_id, camera_id)
+            print("Running Selected pipelines for %s, %s"%(instance_id, camera_name))
+            raw_vid = '%s/vids/%s/%s'%(args.base_dir, instance_id, camera_name)
+            camera_id = camera_name.split('.')[0]
             assert os.path.exists(raw_vid)
 
             frame_dir = '%s/frames/%s/%s'%(args.base_dir, instance_id, camera_id)
-            os.path.makedirs(frame_dir, exist_ok=True)
+            os.makedirs(frame_dir, exist_ok=True)
             
             annotation_dir = '%s/annotations/%s/%s'%(args.base_dir, instance_id, camera_id)
-            os.path.makedirs(annotation_dir, exist_ok=True)
+            os.makedirs(annotation_dir, exist_ok=True)
 
-            visualization_dir = '%s/visualize'
-            os.path.makedirs(visualization_dir, exist_ok=True)
+            visualization_dir = '%s/visualize'%(args.base_dir)
+            os.makedirs(visualization_dir, exist_ok=True)
 
             raw_detections = '%s/raw_detections.txt'%(annotation_dir)
             head_boxes_file = '%s/head_annotations.csv'%(annotation_dir)
@@ -54,7 +59,7 @@ def main(args):
 
             if args.extract_frames or args.full_pipeline:
                 # Perform Frame Extraction
-                print("Extracting Frames for %s, %s ..."%(instance_id, camera_id), end = '\t'*4)
+                print("Extracting Frames ...", end = '\t'*4)
                 frame_extraction(raw_vid, frame_dir)
             if args.detect_heads or args.full_pipeline:
                 print('TODO')
@@ -64,14 +69,19 @@ def main(args):
                 # print("Identifying person under Construction...")
             if args.visualize_only_head or args.full_pipeline: 
                 print('TODO')
-            if args.obtian_gaze or args.full_pipeline:
+            if args.obtain_gaze or args.full_pipeline:
                 print("Running Gaze Follow and Gaze Pattern...")
-                assert(len(os.listdir(args.frame_dir))>0)
+                assert(len(os.listdir(frame_dir))>0)
                 assert(os.path.exists(head_boxes_file))
                 gaze_handler.process(head_boxes_file, frame_dir, heatmap_pkl, gaze_file)
 
             if args.visualize_all or args.full_pipeline:
-                output_vid = '%s/%s_%s'%(visualization_dir, instance_id, camera_id)
-                assert(len(os.listdir(args.frame_dir))>0)
+                output_vid = '%s/%s_%s.mp4'%(visualization_dir, instance_id, camera_id)
+                assert(len(os.listdir(frame_dir))>0)
                 assert(os.path.exists(gaze_file))
                 visualize(output_vid, frame_dir, gaze_file, gaze_heatmaps=False, compression=0.5)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser('Running pipeline for gazefollow inwild...', parents=[get_args_parser()])
+    args = parser.parse_args()
+    main(args)

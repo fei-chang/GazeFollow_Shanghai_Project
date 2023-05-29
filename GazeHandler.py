@@ -9,7 +9,7 @@ from PIL import Image
 import numpy as np
 import pandas as pd
 import pickle
-from self.gaze_models.model_v1 import ModelSpatial, get_head_box_channel
+from gaze_models.model_v1 import ModelSpatial, get_head_box_channel
 
 
 class GazeDataset(Dataset):
