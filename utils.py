@@ -17,7 +17,7 @@ def cv2_safe_write(img, filename):
     '''
     cv2.imencode('.jpg', img)[1].tofile(filename)
 
-def frame_extraction(input_vid:str, output_dir:str, fps=-1):
+def frame_extraction(input_vid:str, output_dir:str, fps=30):
     '''
     Args:
     input_vid:  the path of input video
@@ -32,7 +32,7 @@ def frame_extraction(input_vid:str, output_dir:str, fps=-1):
     else:
         ffmpeg_command = 'ffmpeg -i {} -r {} -q:v 2 -f image2 {}/%06d.jpg'.format(input_vid, fps, output_dir)
 
-    subprocess.run(ffmpeg_command, check=True)
+    subprocess.run(ffmpeg_command, shell=True)
 
 def visualize(output_vid: str, frame_dir:str, annotations:str, 
               gaze_heatmaps=True, gaze_points = True, gaze_patterns = True,
@@ -92,6 +92,7 @@ def visualize(output_vid: str, frame_dir:str, annotations:str,
             xmin, ymin, xmax, ymax = map(int, [xmin*w, ymin*h, xmax*w, ymax*h])
             color = (0,255,0) if (personID=='teacher') else (0,0,255)
             frame = cv2.rectangle(frame, (xmin,ymin), (xmax, ymax), color, line_thickness) # Draw head box
+            
             if gaze_heatmaps:
                 #TODO:
                 print("Gaze heatmap visualization Under Construction")

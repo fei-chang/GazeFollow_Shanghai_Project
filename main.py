@@ -2,11 +2,12 @@ import argparse
 import os
 from utils import frame_extraction, visualize
 from GazeHandler import GazeHandler
+from PersonTracker import PersonTracker
 
 def get_args_parser():
     parser = argparse.ArgumentParser('General Setup', add_help=False)
     # Setup Path
-    parser.add_argument('--base_dir', type=str, default = 'D:/ShanghaiASD_project/ShanghaiASD/20230519')
+    parser.add_argument('--base_dir', type=str, default = 'D:/ShanghaiASD_project/ShanghaiASD/20230531')
     parser.add_argument('--model_weights', type=str, default = '/home/changfei/gaze_follow/model_gazefollow.pt')
     
     # Setup Instance and Camera ids
@@ -30,7 +31,9 @@ def main(args):
 
     if args.obtain_gaze or args.full_pipeline:
         gaze_handler = GazeHandler(args.model_weights)
-    
+    if args.identify_person or args.full_pipelines:
+        person_tracker = PersonTracker()
+
     instances =  os.listdir('%s/vids'%args.base_dir) if args.instance_id=='all' else [args.instance_id]
     print("Will Run selected pipelines on instances: ", instances)
     for instance_id in instances:
@@ -64,11 +67,23 @@ def main(args):
             if args.detect_heads or args.full_pipeline:
                 print('TODO')
                 # print("Detecting Heads under Construction...")
+
             if args.identify_person or args.full_pipeline:
-                print('TODO')
-                # print("Identifying person under Construction...")
-            if args.visualize_only_head or args.full_pipeline: 
-                print('TODO')
+                print("Identifying person ...")
+                result_df = person_tracker.track_from_files(raw_detections,
+                                                frame_dir)
+                result_df.to_csv(head_boxes_file, index=False)
+
+            if args.visualize_only_head: 
+                print('Visualizing Preson Tracking ...')
+                output_vid = '%s/person_tracking_%s_%s.mp4'%(visualization_dir, instance_id, camera_id)
+                visualize(output_vid,
+                          frame_dir,
+                          head_boxes_file,
+                          gaze_heatmaps=False,
+                          gaze_points=False,
+                          gaze_patterns=False,
+                          compression=0.5)
             if args.obtain_gaze or args.full_pipeline:
                 print("Running Gaze Follow and Gaze Pattern...")
                 assert(len(os.listdir(frame_dir))>0)

@@ -126,6 +126,7 @@ class GazeHandler:
                  input_resolution=224,
                  output_resolution=64,
                  save_gaze_heatmaps=True):
+        
         self.device = torch.device(device_choice)
         self.batch_size = batch_size
         self.prefetch_factor = prefetch_factor
