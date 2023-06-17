@@ -17,6 +17,18 @@ def cv2_safe_write(img, filename):
     '''
     cv2.imencode('.jpg', img)[1].tofile(filename)
 
+def expand_headbox(head_box:list, k:float):
+    '''
+    expand headbox by factor k
+    '''
+    xmin, ymin, xmax, ymax = head_box
+    updated_xmin = max(0, xmin - k*(xmax - xmin))
+    updated_ymin = max(0, ymin - k*(ymax - ymin))
+    updated_xmax = min(1, xmax + k*(xmax - xmin))
+    updated_ymax = min(1, ymax + k*(ymax - ymin))
+
+    return [updated_xmin, updated_ymin, updated_xmax, updated_ymax]
+
 def frame_extraction(input_vid:str, output_dir:str, fps=30):
     '''
     Args:

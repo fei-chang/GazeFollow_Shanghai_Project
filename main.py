@@ -31,7 +31,7 @@ def main(args):
 
     if args.obtain_gaze or args.full_pipeline:
         gaze_handler = GazeHandler(args.model_weights)
-    if args.identify_person or args.full_pipelines:
+    if args.identify_person or args.full_pipeline:
         person_tracker = PersonTracker()
 
     instances =  os.listdir('%s/vids'%args.base_dir) if args.instance_id=='all' else [args.instance_id]
@@ -84,6 +84,7 @@ def main(args):
                           gaze_points=False,
                           gaze_patterns=False,
                           compression=0.5)
+                
             if args.obtain_gaze or args.full_pipeline:
                 print("Running Gaze Follow and Gaze Pattern...")
                 assert(len(os.listdir(frame_dir))>0)

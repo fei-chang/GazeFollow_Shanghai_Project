@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import pickle
 from gaze_models.model_v1 import ModelSpatial, get_head_box_channel
-
+from utils import expand_headbox
 
 class GazeDataset(Dataset):
     '''
@@ -73,7 +73,7 @@ def obtain_gaze_point(raw_hm:np.array):
     return max_idx
 
 def obtain_gaze_pattern(p1_gaze_data:pd.DataFrame, p2_gaze_data:pd.DataFrame,
-                        share_thres = 1e-3, ):
+                        share_thres = 1e-3, exprand_ratio = 0.1):
     '''
     Obtaining gaze pattern based on 2D gaze points and heax boxes fo two individuals
     '''
@@ -87,17 +87,19 @@ def obtain_gaze_pattern(p1_gaze_data:pd.DataFrame, p2_gaze_data:pd.DataFrame,
         p1_info = p1_gaze_data.loc[f]
         p2_info = p2_gaze_data.loc[f]
         p1_head_box = p1_info[['xmin', 'ymin', 'xmax', 'ymax']].values
+        p1_head_box = expand_headbox(p1_head_box, exprand_ratio)
+
         p1_gaze = p1_info[['gaze_x', 'gaze_y']].values
         p2_head_box = p2_info[['xmin', 'ymin', 'xmax', 'ymax']].values
+        p2_head_box = expand_headbox(p2_head_box, exprand_ratio)
+
         p2_gaze = p2_info[['gaze_x', 'gaze_y']].values
         gaze_dist = np.linalg.norm(p2_gaze-p1_gaze)
         p1_inside = np.all(p1_gaze>=p2_head_box[:2]) and np.all(p1_gaze<=p2_head_box[2:])
         p2_inside = np.all(p2_gaze>=p1_head_box[:2]) and np.all(p2_gaze<=p1_head_box[2:])
 
-        if gaze_dist<share_thres:
-            p1_gaze_data.loc[f, 'pattern'] = 'Share'
-            p2_gaze_data.loc[f, 'pattern'] = 'Share'
-        elif p1_inside and p2_inside:
+
+        if p1_inside and p2_inside:
             p1_gaze_data.loc[f, 'pattern']  = 'Mutual'
             p2_gaze_data.loc[f, 'pattern']  = 'Mutual'
         elif p1_inside:
@@ -106,6 +108,9 @@ def obtain_gaze_pattern(p1_gaze_data:pd.DataFrame, p2_gaze_data:pd.DataFrame,
         elif p2_inside:
             p1_gaze_data.loc[f, 'pattern']  = 'Miss'
             p2_gaze_data.loc[f, 'pattern']  = 'Single'
+        elif gaze_dist<share_thres:
+            p1_gaze_data.loc[f, 'pattern'] = 'Share'
+            p2_gaze_data.loc[f, 'pattern'] = 'Share'
         else:
             p1_gaze_data.loc[f, 'pattern']  = 'Void'
             p2_gaze_data.loc[f, 'pattern']  = 'Void'
