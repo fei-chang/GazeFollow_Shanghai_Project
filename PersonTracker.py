@@ -104,48 +104,89 @@ class PersonTracker:
         self.overlap_upper = overlap_upper
         self.overlap_lower = overlap_lower
 
-    def track_from_files(self,
-                         raw_detection_file: str,
-                         frame_dir: str,
-                         personIDs = ['teacher', 'student'],
-                         start_frame = 1,
-                         end_frame = -1,
-                         max_existing = 2):
-        '''
+
+        self.tracked_dfs = {}
+        self.frame_dir = None
+        self.proposal_df = None
+
+    def release(self):
+        self.tracked_dfs = {}
+        self.frame_dir = None
+        self.proposal_df = None
+
+    def get_person_df(self, personID):
+        if not personID in self.tracked_dfs:
+            print("[ERROR] The specified person %s is not found, please check."%personID)
+            print("Tracked personIDs:")
+            print(self.tracked_dfs.keys())
+
+        else:
+            return self.tracked_dfs[personID]
+    
+    def get_full_df(self):
+        dfs = list(self.tracked_dfs.values())
+        full_df = pd.concat(dfs).sort_values('frameID').reset_index(drop=True)
+        return full_df
         
+    def load_from_files(self,
+                        raw_detection_file: str,
+                        frame_dir):
+        '''
         Args:
         raw_detection_file: the csv file with raw_annotation_detection
         frame_dir:          the path to read in frames
-        personIDs:          the list of people to be tracked
-        start_frame:        the frame to start running head selection
-        end_frame:          the frame to end running head selection (-1 for according to the end of given dataframe)
-        max_existing:       the maximum number of detections at a frame in the given file.
-        Returns:
-        final_df (pd.DataFrame): the dataframe with head annotation cleaned up
         '''
 
         self.frame_dir = frame_dir
         columns = ['frameID', 'label', 'xmin', 'ymin', 'xmax', 'ymax']
         raw_df = pd.read_csv(raw_detection_file, names = columns)
         raw_df = raw_df[['frameID', 'xmin', 'ymin', 'xmax', 'ymax']].sort_values(by=['frameID', 'xmin']).reset_index(drop=True)
-        end_frame = raw_df.frameID.max() if end_frame<0 else end_frame
-        proposal_df = raw_df
-        results = []
-        for personID in personIDs:
+        self.proposal_df = raw_df
+
+    def track_person(self, personID, start_frame=1, end_frame = -1):
+        '''
+        Args:
+        personID:       the target person to be tracked
+        start_frame:    the frame to start running head selection
+        end_frame:      the frame to end running head selection (-1 for according to the end of given dataframe)
+        '''
+
+        if self.frame_dir is None:
+            print("[ERROR] No information stored. Please call the load_from_files function first!")
+            return None
+        
+        else:
+            end_frame = self.proposal_df.frameID.max() if end_frame<0 else end_frame
             tracked_df = self.__track_person(
-                proposal_df,
+                self.proposal_df,
                 personID,
                 start_frame,
                 end_frame
             )
-            results.append(tracked_df)
-            proposal_df = pd.merge(raw_df, tracked_df, how = 'left', indicator = True)# Remove used annotations
-            proposal_df = proposal_df[proposal_df['_merge']=='left_only']
-            del proposal_df['_merge']
-        
-        final_df = pd.concat(results).sort_values('frameID').reset_index(drop=True)
-        
-        return final_df
+            if not tracked_df is None:
+                self.tracked_dfs[personID] = tracked_df
+                new_proposal = pd.merge(self.proposal_df, tracked_df, how = 'left', indicator = True)# Remove used annotations
+                new_proposal = new_proposal[new_proposal['_merge']=='left_only']
+                del new_proposal['_merge']
+                self.proposal_df = new_proposal
+
+            else:
+                print("[ERROR] Tracking Failed.")    
+
+    
+    def track_all(self, start_frame=1, end_frame=-1):
+        '''
+        Args:
+        Track all people in the proposal df
+
+        personIDs:          the perople to track in the proprosal df, if not specified, will track all people present in the video, by naming 'p1', 'p2', ...
+        start_frame:        the frame to start running head selection
+        end_frame:          the frame to end running head selection (-1 for according to the end of given dataframe)
+
+        '''
+    # TODO
+        return None
+
     
     def __get_head_img(
             self,
@@ -197,17 +238,17 @@ class PersonTracker:
         
         select_new_anchor = True
         confusing_anchor = False
-        End = False
+        Terminated = False
 
         f = start_frame
 
-        while (not End) and (f<end_frame):
+        while (not Terminated) and (f<end_frame):
             if f not in frame_ls:
                 # If encounter missing frames in the dataframe, just increment and ignore
                 f+=1 
                 continue
             # Case 1: a new anchor needs to be set.
-            while select_new_anchor and ((not End) and (f<end_frame)):
+            while select_new_anchor and ((not Terminated) and (f<end_frame)):
                 if f not in frame_ls:
                     # If encounter missing frames in the dataframe, just increment and ignore
                     f+=1 
@@ -231,7 +272,7 @@ class PersonTracker:
                         elif decision=='Skip':
                             show_window = False
                         elif decision =='Terminate and Drop':
-                            End = True
+                            Terminated = True
                             select_new_anchor = False
                             show_window = False
                     else:
@@ -289,6 +330,10 @@ class PersonTracker:
             # increment f
             f+=1
 
+        if Terminated:
+            print("[WARNING] The tracking process is Terminated. Tracked data is dropped.")
+            return None
+        
         proposal_df = proposal_df[proposal_df.personID==personID]
         proposal_df = proposal_df[['frameID', 'xmin', 'ymin', 'xmax', 'ymax', 'personID']]
         # Interpolate and Fill NA values
@@ -305,8 +350,7 @@ class PersonTracker:
         decision = window.get_result()
 
         if decision=='No':
-            print("*"*30)
-            print("WARNING!")
-            print("Something went wrong in the middle! Unwanted head in the final")
-            print("*"*30)
+            print("[WARNING] Something went wrong in the middle! Unwanted head in the final. Tracked data is dropped")
+            return None
+
         return interpolated
