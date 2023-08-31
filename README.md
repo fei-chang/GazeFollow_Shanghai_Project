@@ -13,8 +13,10 @@ python main.py --base_dir base_dir --instance_id instance_id --camera_id camera_
 - Gaze Follow and Gaze Pattern
 
 ### 文件存储
+
 <details>
 <summary> 文件结构 </summary>
+    
     ├── vids                        -> 视频
     |  ├── instance_id(kid)           # 小孩子的ID
     |  |  ├── camera_id.mov/mp4         
@@ -38,6 +40,7 @@ python main.py --base_dir base_dir --instance_id instance_id --camera_id camera_
 
 <details>
 <summary> 文件格式说明 </summary>
+    
 1. **head_annotations** 头部标注
     - ✅Has column header: `['frameID', 'xmin', 'ymin', 'xmax', 'ymax', 'personID', 'activity_split']`
     - :x: No index column
